@@ -11,13 +11,11 @@ start "" node server/server.js
 echo 2. Waiting for server to initialize...
 timeout /t 3 /nobreak >nul
 
-echo 3. Starting Secure Worldwide Cloudflare HTTPS Tunnel...
+echo 3. Starting Secure Worldwide HTTPS Tunnel...
 echo ========================================================
-echo Open the generated https://*.trycloudflare.com link on your phone!
+echo Your fixed URL is: https://sentinel-aravind.loca.lt
+echo If prompted for a tunnel password, enter: 152.57.228.19
 echo ========================================================
-if exist "%~dp0cloudflared.exe" (
-    "%~dp0cloudflared.exe" tunnel --url http://localhost:3000
-) else (
-    npx.cmd localtunnel --port 3000
-)
+
+npx.cmd localtunnel --port 3000 --subdomain sentinel-aravind
 pause
