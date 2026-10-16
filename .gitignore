@@ -1,0 +1,10 @@
+node_modules/
+.env
+data/*.db
+data/*.db-journal
+data/*.sqlite
+data/recordings/*
+!data/recordings/.gitkeep
+npm-debug.log*
+.DS_Store
+Thumbs.db

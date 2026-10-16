@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Sentinel – Security Webcam & Remote Surveillance</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="alert" aria-live="assertive"></div>
+<div id="toast-container"></div>
+
+<!-- ================= SIGN IN SCREEN ================= -->
+<div class="login" id="login">
+  <div class="pitch">
+    <div class="brand"><i></i>Sentinel</div>
+    <h1>Know who is at the door, wherever you are.</h1>
+    <p>Turn any smartphone, tablet, or laptop into a smart security camera. Stream live feeds peer-to-peer and review high-definition recordings anytime.</p>
+  </div>
+  <div class="fwrap">
+    <!-- Form 1: Enter email or phone -->
+    <form id="lg1" novalidate>
+      <h2>Sign in to Sentinel</h2>
+      <div class="seg" id="kind" role="group" aria-label="Sign in with">
+        <button type="button" data-k="email" aria-pressed="true">Email</button>
+        <button type="button" data-k="phone" aria-pressed="false">Phone</button>
+      </div>
+      <label for="lg-id" class="hint">We will send you a one-time verification code.</label>
+      <input class="txt" id="lg-id" type="email" placeholder="you@example.com" autocomplete="username">
+      <div class="err" id="lg-err" role="alert"></div>
+      <button class="btn primary" type="submit">Send verification code</button>
+      <div style="text-align:center;margin-top:12px;padding-top:12px;border-top:1px solid var(--line)">
+        <span class="hint" style="display:block;margin-bottom:8px">Setting up a camera device?</span>
+        <button class="btn" type="button" id="lg-pair-shortcut">Pair camera with code</button>
+      </div>
+    </form>
+
+    <!-- Form 2: Enter 6-digit OTP -->
+    <form id="lg2" class="hidden" novalidate>
+      <h2>Enter verification code</h2>
+      <p class="hint" id="lg-hint"></p>
+      <input class="txt" id="lg-code" inputmode="numeric" maxlength="6" placeholder="6-digit code" autocomplete="one-time-code" aria-label="Code">
+      <div class="err" id="lg-err2" role="alert"></div>
+      <button class="btn primary" type="submit">Verify & Continue</button>
+      <button class="btn" type="button" id="lg-back">Use a different email or number</button>
+    </form>
+
+    <!-- Form 3: Quick Pair Camera Device with Code -->
+    <form id="lg-pair-form" class="hidden" novalidate>
+      <h2>Pair Camera to Account</h2>
+      <p class="hint">Enter the 6-digit pairing code shown on your viewer device.</p>
+      <input class="txt" id="lg-pair-code" inputmode="numeric" maxlength="6" placeholder="e.g. 583921" aria-label="Pairing Code">
+      <label for="lg-pair-name" class="hint" style="margin-top:8px">Camera Location / Name</label>
+      <input class="txt" id="lg-pair-name" type="text" placeholder="e.g. Front Door" value="Front Door">
+      <div class="err" id="lg-pair-err" role="alert"></div>
+      <button class="btn primary" type="submit">Link & Activate Camera</button>
+      <button class="btn" type="button" id="lg-pair-back">Back to regular sign in</button>
+    </form>
+  </div>
+</div>
+
+<!-- ================= MAIN APPLICATION SHELL ================= -->
+<div class="shell hidden" id="app">
+  <!-- Top Navigation Bar -->
+  <header class="top">
+    <button class="burger" id="burger" aria-label="Open menu" aria-expanded="false" aria-controls="drawer">
+      <span></span><span></span><span></span>
+    </button>
+    <div class="brand"><i></i>Sentinel</div>
+    
+    <div class="header-actions">
+      <div class="conn-pill" id="server-status"><i id="status-dot"></i><span id="status-text">Connecting...</span></div>
+      <button class="btn sm" id="quick-pair-btn"><i>+</i> Add Camera</button>
+      <span class="where" id="where">Dashboard</span>
+    </div>
+  </header>
+
+  <!-- Side Drawer Navigation -->
+  <div class="scrim" id="scrim"></div>
+  <aside class="side" id="drawer" aria-label="Menu">
+    <div class="dhead">
+      <div class="brand"><i></i>Sentinel</div>
+      <button class="x" id="close" aria-label="Close menu">&times;</button>
+    </div>
+
+    <nav class="nav" aria-label="Sections">
+      <button data-v="dash" aria-current="true">Dashboard</button>
+      <button data-v="live">Live Cameras</button>
+      <button data-v="broadcast">Camera Broadcaster</button>
+      <button data-v="devices">Camera Devices <span class="n" id="n-cams">0</span></button>
+      <button data-v="recordings">Recordings <span class="n" id="n-recs">0</span></button>
+      <button data-v="intruder">Intruder Alerts <span class="n" id="n-intr">0</span></button>
+      <button data-v="sus">Suspicious Activity <span class="n" id="n-sus">0</span></button>
+      <button data-v="set">Settings</button>
+    </nav>
+
+    <div class="seg" role="group" aria-label="Home mode">
+      <button id="m-home" aria-pressed="true">At home</button>
+      <button id="m-away" aria-pressed="false">Away, armed</button>
+    </div>
+
+    <div class="me">
+      <span id="whoami">user@example.com</span>
+      <button class="btn" id="out">Sign out</button>
+    </div>
+  </aside>
+
+  <!-- Main View Area -->
+  <div class="content">
+
+    <!-- VIEW 1: DASHBOARD OVERVIEW -->
+    <section data-view="dash">
+      <h1>Security Overview</h1>
+      <p class="sub">Welcome back. Your Sentinel security network is actively protecting your home.</p>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <span class="label">Online Cameras</span>
+          <span class="val" id="dash-online-cams">0</span>
+          <span class="hint" id="dash-total-cams">0 registered devices</span>
+        </div>
+        <div class="stat-card">
+          <span class="label">Active Recordings</span>
+          <span class="val" id="dash-recs-count">0</span>
+          <span class="hint">Saved locally & cloud-ready</span>
+        </div>
+        <div class="stat-card">
+          <span class="label">Security Alerts Today</span>
+          <span class="val" id="dash-events-today">0</span>
+          <span class="hint" id="dash-events-hint">Motion detection active</span>
+        </div>
+        <div class="stat-card">
+          <span class="label">System Status</span>
+          <span class="val" style="color:var(--accent);font-size:20px" id="dash-mode-text">At Home</span>
+          <span class="hint">WebRTC P2P ready</span>
+        </div>
+      </div>
+
+      <div class="quick-actions">
+        <div class="action-card">
+          <h3>📡 Watch Live Cameras</h3>
+          <p>Stream real-time video from any of your paired security cameras with ultra-low latency.</p>
+          <button class="btn primary" id="dash-btn-live">Open Live Viewer</button>
+        </div>
+        <div class="action-card">
+          <h3>📷 Use This Device as Camera</h3>
+          <p>Turn this phone or laptop into a security camera broadcasting live to your account.</p>
+          <button class="btn lamp" id="dash-btn-broadcast">Start Broadcasting</button>
+        </div>
+        <div class="action-card">
+          <h3>🔗 Pair a New Camera</h3>
+          <p>Generate a secure 6-digit code or QR code to connect an old phone or tablet in seconds.</p>
+          <button class="btn" id="dash-btn-pair">Pair New Device</button>
+        </div>
+        <div class="action-card">
+          <h3>🎞️ Saved Recordings</h3>
+          <p>Review, playback, seek, and download recorded security video clips.</p>
+          <button class="btn" id="dash-btn-recordings">View Recordings</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW 2: LIVE VIEWER (AlfredCamera Style) -->
+    <section data-view="live" class="hidden">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px">
+        <div style="display:flex;align-items:center;gap:12px">
+          <label for="viewer-cam-select" style="font-weight:600;font-size:14px">Select Camera:</label>
+          <select id="viewer-cam-select" class="txt" style="width:220px;padding:6px 10px"></select>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn sm" id="viewer-refresh-cams">🔄 Refresh</button>
+          <button class="btn sm primary" id="viewer-connect-btn">Connect Feed</button>
+        </div>
+      </div>
+
+      <div class="grid">
+        <div>
+          <div class="stage" id="stage">
+            <video id="vid" autoplay playsinline muted></video>
+            <canvas id="ov"></canvas>
+
+            <!-- Status Badges & Overlays -->
+            <div class="badge" id="badge" data-s="off">
+              <span class="dot"></span><span id="btxt">Camera is off</span>
+            </div>
+            <div class="rec-badge hidden" id="rec-badge">
+              <span class="rec-dot"></span><span id="rec-timer-txt">REC 00:00</span>
+            </div>
+            <div class="clock" id="clock">--:--:--</div>
+            <div class="camname" id="camname">Front door</div>
+
+            <!-- Offline Screen Overlay -->
+            <div class="offline-screen hidden" id="offline-screen">
+              <h3>Camera is Offline</h3>
+              <p id="offline-desc">The camera device is currently not broadcasting. Ensure the camera device is powered on with Sentinel active.</p>
+              <button class="btn primary sm" id="offline-retry-btn">Retry Connection</button>
+            </div>
+
+            <!-- Idle / Start Camera Overlay -->
+            <div class="idle" id="idle">
+              <p>Select a paired remote camera above or activate this device's camera to monitor for visitors.</p>
+              <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+                <button class="btn lamp" id="camOn">Use Local Camera</button>
+                <button class="btn" id="idle-pair-btn">Pair New Camera</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Controls Bar Under Stage -->
+          <div class="controls-bar">
+            <div class="controls-left">
+              <button class="btn" id="rec-btn">● Record</button>
+              <button class="btn" id="snap-btn">📷 Snapshot</button>
+              <button class="btn" id="fs-btn">⛶ Fullscreen</button>
+              <button class="btn" id="sim">Simulate Visitor</button>
+            </div>
+            <div class="controls-right">
+              <span class="hint" id="stream-stats">WebRTC P2P</span>
+            </div>
+          </div>
+          <p id="hint" style="color:var(--muted);font-size:13px;margin-top:10px">
+            Encrypted WebRTC peer-to-peer transmission. Recordings are stored safely in your browser and synced with your account.
+          </p>
+        </div>
+
+        <!-- Visitor Logbook Panel -->
+        <aside class="panel log" aria-label="Visitor logbook">
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px 4px">
+            <h2 style="margin:0;padding:0;font-size:16px">Visitor Logbook</h2>
+            <button class="btn sm" id="clear-log-btn" style="padding:3px 8px;font-size:12px">Clear</button>
+          </div>
+          <div id="log"></div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- VIEW 3: CAMERA BROADCASTER (Run this device as camera) -->
+    <section data-view="broadcast" class="hidden">
+      <h1>Camera Broadcaster</h1>
+      <p class="sub">This device is broadcasting its camera feed to authorized viewers on your Sentinel account.</p>
+
+      <div class="grid">
+        <div>
+          <div class="stage" id="b-stage">
+            <video id="b-vid" autoplay playsinline muted></video>
+            <canvas id="b-ov"></canvas>
+
+            <div class="badge" id="b-badge" data-s="off">
+              <span class="dot"></span><span id="b-btxt">Broadcaster Idle</span>
+            </div>
+            <div class="clock" id="b-clock">--:--:--</div>
+            <div class="camname" id="b-camname-display">Living Room</div>
+
+            <div class="idle" id="b-idle">
+              <p>Place this device in a stable position pointing towards the monitoring area and click below to begin broadcasting.</p>
+              <button class="btn lamp" id="b-start-btn">Start Camera Broadcast</button>
+            </div>
+          </div>
+
+          <div class="panel settings" style="margin-top:20px">
+            <h2>Broadcaster Configuration</h2>
+            
+            <div class="row">
+              <label for="b-name-input">
+                Camera Name
+                <small>Give this camera a recognizable name (e.g. Front Door, Backyard, Garage).</small>
+              </label>
+              <input class="txt" id="b-name-input" type="text" value="Living Room">
+            </div>
+
+            <div class="row">
+              <label for="b-camera-select">
+                Select Camera Lens
+                <small>Switch between front selfie camera and rear wide-angle camera.</small>
+              </label>
+              <select id="b-camera-select" class="txt" style="width:260px"></select>
+            </div>
+
+            <div class="row">
+              <label for="b-audio-consent">
+                Microphone Audio
+                <small>Explicit consent required. Audio is disabled by default for privacy.</small>
+              </label>
+              <input class="sw" id="b-audio-consent" type="checkbox">
+            </div>
+
+            <div class="row">
+              <label for="b-local-detect">
+                Run Motion Detection On Device
+                <small>Detect visitors locally and trigger instant alerts to all connected viewers.</small>
+              </label>
+              <input class="sw" id="b-local-detect" type="checkbox" checked>
+            </div>
+
+            <div class="row">
+              <span>Broadcasting Controls</span>
+              <div style="display:flex;gap:10px">
+                <button class="btn danger" id="b-stop-btn">Stop Camera</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Broadcaster Status Panel -->
+        <aside class="panel settings">
+          <h2>Broadcaster Status</h2>
+          <div style="display:flex;flex-direction:column;gap:14px;padding:10px 0">
+            <div>
+              <span style="font-size:13px;color:var(--muted)">Connected Viewers:</span>
+              <div style="font-size:24px;font-weight:700" id="b-viewer-count">0</div>
+            </div>
+            <div>
+              <span style="font-size:13px;color:var(--muted)">Stream Resolution:</span>
+              <div style="font-weight:600" id="b-resolution">1280 × 720 HD</div>
+            </div>
+            <div>
+              <span style="font-size:13px;color:var(--muted)">WebRTC Signaling:</span>
+              <div style="font-weight:600;color:var(--accent)" id="b-signaling-status">Ready</div>
+            </div>
+            <div style="padding-top:10px;border-top:1px solid var(--line)">
+              <button class="btn sm" id="b-open-viewer-shortcut" style="width:100%">Open Viewer Mode</button>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- VIEW 4: CAMERA DEVICES MANAGEMENT -->
+    <section data-view="devices" class="hidden">
+      <div class="device-toolbar">
+        <div>
+          <h1>Paired Camera Devices</h1>
+          <p class="sub" style="margin-bottom:0">Manage cameras connected to your Sentinel account.</p>
+        </div>
+        <div style="display:flex;gap:10px">
+          <button class="btn" id="claim-pairing-btn">Enter Pairing Code</button>
+          <button class="btn primary" id="add-cam-btn"><i>+</i> Add New Camera</button>
+        </div>
+      </div>
+
+      <div class="device-cards" id="devices-container">
+        <!-- Dynamically populated camera device cards -->
+      </div>
+    </section>
+
+    <!-- VIEW 5: RECORDINGS LIBRARY -->
+    <section data-view="recordings" class="hidden">
+      <h1>Video Recordings Library</h1>
+      <p class="sub">Review recorded security footage captured during live surveillance or motion events.</p>
+
+      <div class="recordings-toolbar">
+        <div class="recordings-filters">
+          <label for="rec-filter-camera" class="hint">Camera:</label>
+          <select id="rec-filter-camera" class="txt" style="width:160px;padding:6px 10px">
+            <option value="all">All Cameras</option>
+          </select>
+
+          <label for="rec-filter-sort" class="hint">Sort:</label>
+          <select id="rec-filter-sort" class="txt" style="width:140px;padding:6px 10px">
+            <option value="newest">Newest first</option>
+            <option value="oldest">Oldest first</option>
+          </select>
+
+          <input class="txt" id="rec-search" type="search" placeholder="Search by name..." style="width:180px;padding:6px 10px">
+        </div>
+
+        <div style="display:flex;align-items:center;gap:10px">
+          <span class="hint" id="storage-quota-info">Storage: 0 MB used</span>
+          <button class="btn sm" id="rec-refresh-btn">🔄 Refresh</button>
+        </div>
+      </div>
+
+      <div class="recordings-grid" id="recordings-grid">
+        <!-- Dynamically populated recording cards -->
+      </div>
+    </section>
+
+    <!-- VIEW 6: INTRUDER ALERTS -->
+    <section data-view="intruder" class="hidden">
+      <h1>Intruder Alerts</h1>
+      <p class="sub">Every visitor spotted at your entrance not yet marked as known.</p>
+      <div class="tiles" id="intr"></div>
+    </section>
+
+    <!-- VIEW 7: SUSPICIOUS ACTIVITY -->
+    <section data-view="sus" class="hidden">
+      <h1>Suspicious Activity</h1>
+      <p class="sub">Visits flagged with unusual patterns: after hours (10 PM – 6 AM), repeat visits, lingering, or detected while armed away.</p>
+      <div id="susl"></div>
+    </section>
+
+    <!-- VIEW 8: SETTINGS -->
+    <section data-view="set" class="hidden">
+      <div class="panel settings">
+        <h2>Notification Delivery</h2>
+        <div class="row">
+          <label for="s-email">Email address<small>Alert snapshots and sign-in verification codes go here.</small></label>
+          <input class="txt" id="s-email" type="email" placeholder="you@example.com">
+        </div>
+        <div class="row">
+          <label for="s-phone">Phone number<small>Include country code (e.g. +1 555-0199 or +91 98765 43210).</small></label>
+          <input class="txt" id="s-phone" type="tel" placeholder="+1 ...">
+        </div>
+        <div class="row">
+          <label for="c-email">Email alerts<small>Receive email with visitor snapshot for every detected visitor.</small></label>
+          <input class="sw" id="c-email" type="checkbox">
+        </div>
+        <div class="row">
+          <label for="c-sms">SMS text message<small>Receive an instant text message alert.</small></label>
+          <input class="sw" id="c-sms" type="checkbox">
+        </div>
+        <div class="row">
+          <label for="c-wa">WhatsApp<small>Send visitor alert link straight to WhatsApp.</small></label>
+          <input class="sw" id="c-wa" type="checkbox">
+        </div>
+        <div class="row">
+          <span>Test Notification Pipeline<small>Simulates an alert and triggers the enabled delivery channels above.</small></span>
+          <button class="btn" id="test">Send a test alert</button>
+        </div>
+
+        <h2>Browser & Audio Notifications</h2>
+        <div class="row">
+          <label for="s-sound">Play arrival chime<small>Two-tone chime when a visitor or movement is detected.</small></label>
+          <input class="sw" id="s-sound" type="checkbox" checked>
+        </div>
+        <div class="row">
+          <label for="s-push">Desktop / Browser notifications<small>Receive instant popups even when Sentinel is minimized or running in a background tab.</small></label>
+          <input class="sw" id="s-push" type="checkbox">
+        </div>
+        <div class="row">
+          <label for="s-silent">Silent surveillance mode<small>Record visitors into logbook without chimes, popups, or external notifications.</small></label>
+          <input class="sw" id="s-silent" type="checkbox">
+        </div>
+
+        <h2>Motion Detection & Security Settings</h2>
+        <div class="row">
+          <label for="s-sens">Motion sensitivity<small id="sensTxt">Balanced. Good for standard doorway surveillance.</small></label>
+          <input id="s-sens" type="range" min="0" max="100" value="60">
+        </div>
+        <div class="row">
+          <label for="s-people">Person-shaped filter<small>Ignore low wide movement (such as pets or distant cars). Only upright person shapes trigger alerts.</small></label>
+          <input class="sw" id="s-people" type="checkbox" checked>
+        </div>
+        <div class="row">
+          <label for="s-cool">Alert cooldown<small id="coolTxt">After an alert, ignore new movement for 20 seconds.</small></label>
+          <input id="s-cool" type="range" min="5" max="60" step="5" value="20">
+        </div>
+        <div class="row">
+          <label for="s-autorec">Auto-record on motion<small>Automatically capture a 10-second video recording whenever a visitor is detected.</small></label>
+          <input class="sw" id="s-autorec" type="checkbox" checked>
+        </div>
+
+        <h2>Network & Diagnostics</h2>
+        <div class="row">
+          <span>WebRTC STUN / TURN Configuration<small id="stun-status">Configured via server .env</small></span>
+          <button class="btn sm" id="check-ice-btn">Check Connectivity</button>
+        </div>
+        <div class="row">
+          <span>Storage Management<small>Clear local IndexedDB recorded clips from this browser.</small></span>
+          <button class="btn danger sm" id="clear-storage-btn">Clear Local Recordings</button>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<!-- ================= MODAL: VIDEO PLAYBACK ================= -->
+<div class="modal-overlay hidden" id="player-modal" role="dialog" aria-modal="true" aria-labelledby="modal-rec-title">
+  <div class="modal-window">
+    <div class="modal-header">
+      <h3 id="modal-rec-title">Recording Playback</h3>
+      <button class="x" id="modal-close-btn" aria-label="Close player">&times;</button>
+    </div>
+    
+    <div class="player-container">
+      <video id="modal-video" playsinline></video>
+    </div>
+
+    <div class="player-controls">
+      <input type="range" class="player-scrubber" id="player-scrub" min="0" max="100" value="0" step="0.1">
+      
+      <div class="player-row">
+        <div class="player-row-left">
+          <button class="btn sm primary" id="player-play-btn">▶ Play</button>
+          <span class="player-time" id="player-time-display">0:00 / 0:00</span>
+          
+          <button class="btn sm" id="player-mute-btn">🔊</button>
+          <input type="range" id="player-volume" min="0" max="1" step="0.05" value="1" style="width:70px">
+        </div>
+
+        <div class="player-row-right">
+          <label for="player-speed" style="font-size:12px;color:var(--muted)">Speed:</label>
+          <select id="player-speed" class="txt" style="width:75px;padding:4px 6px;font-size:13px">
+            <option value="0.5">0.5x</option>
+            <option value="1" selected>1.0x</option>
+            <option value="1.5">1.5x</option>
+            <option value="2">2.0x</option>
+          </select>
+          <button class="btn sm" id="player-download-btn">⬇ Download</button>
+          <button class="btn sm" id="player-fullscreen-btn">⛶</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= MODAL: PAIR NEW CAMERA DEVICE ================= -->
+<div class="modal-overlay hidden" id="pairing-modal" role="dialog" aria-modal="true" aria-labelledby="pair-modal-title">
+  <div class="modal-window" style="max-width:520px">
+    <div class="modal-header">
+      <h3 id="pair-modal-title">Add & Pair Camera Device</h3>
+      <button class="x" id="pair-modal-close-btn" aria-label="Close modal">&times;</button>
+    </div>
+    
+    <div class="pair-modal-body">
+      <div style="font-size:14px;color:var(--muted)">
+        Scan the QR code on your camera phone or enter the 6-digit pairing code below:
+      </div>
+
+      <div class="qr-box" id="qr-display"></div>
+
+      <div class="pairing-code-display" id="pairing-code-box">------</div>
+      <div class="hint" id="pairing-timer">Code expires in 10:00</div>
+
+      <div style="width:100%;text-align:left;margin-top:10px">
+        <label for="pair-cam-name" class="hint">Assign camera name:</label>
+        <input class="txt" id="pair-cam-name" value="Front Door" style="margin-top:4px">
+      </div>
+
+      <div class="chips">
+        <button class="chip" data-name="Front Door">Front Door</button>
+        <button class="chip" data-name="Living Room">Living Room</button>
+        <button class="chip" data-name="Backyard">Backyard</button>
+        <button class="chip" data-name="Garage">Garage</button>
+      </div>
+
+      <button class="btn primary" id="generate-new-code-btn" style="width:100%">Generate New Pairing Code</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= MODAL: ENTER PAIRING CODE (CLAIM) ================= -->
+<div class="modal-overlay hidden" id="claim-modal" role="dialog" aria-modal="true" aria-labelledby="claim-modal-title">
+  <div class="modal-window" style="max-width:440px">
+    <div class="modal-header">
+      <h3 id="claim-modal-title">Enter Pairing Code</h3>
+      <button class="x" id="claim-modal-close-btn" aria-label="Close modal">&times;</button>
+    </div>
+    <div class="pair-modal-body">
+      <p class="hint">Enter the 6-digit code displayed on your primary viewer device to register this device as a security camera.</p>
+      
+      <input class="txt" id="claim-code-input" inputmode="numeric" maxlength="6" placeholder="e.g. 842194" style="text-align:center;font-size:24px;letter-spacing:4px">
+      <input class="txt" id="claim-name-input" type="text" placeholder="Camera Name (e.g. Backyard)" value="Security Camera">
+      <div class="err" id="claim-err"></div>
+
+      <button class="btn primary" id="claim-submit-btn" style="width:100%">Link This Camera</button>
+    </div>
+  </div>
+</div>
+
+<!-- Socket.IO Client Script (Served by backend) -->
+<script src="/socket.io/socket.io.js"></script>
+
+<!-- Sentinel Modular Scripts -->
+<script src="js/db.js"></script>
+<script src="js/qrcode.js"></script>
+<script src="js/webrtc.js"></script>
+<script src="js/recorder.js"></script>
+<script src="js/app.js"></script>
+<script src="script.js"></script>
+</body>
+</html>

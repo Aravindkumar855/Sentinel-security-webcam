@@ -1,0 +1,27 @@
+{
+  "name": "sentinel-security-webcam",
+  "version": "2.0.0",
+  "description": "Sentinel - Multi-Device Security Webcam with Real-Time WebRTC Streaming and Video Recording",
+  "main": "server/server.js",
+  "scripts": {
+    "start": "node server/server.js",
+    "dev": "node --watch server/server.js",
+    "test": "node tests/test-backend.js && node tests/test-e2e-api.js"
+  },
+  "keywords": [
+    "security-camera",
+    "webrtc",
+    "streaming",
+    "video-recording",
+    "surveillance"
+  ],
+  "author": "Sentinel Team",
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "multer": "^1.4.5-lts.1",
+    "socket.io": "^4.8.1"
+  }
+}
